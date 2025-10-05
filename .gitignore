@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+.vercel/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
+
+# Environment files
+.env*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.eslintcache
+
+# Coverage
+coverage/
+*.lcov
+
+# Firebase/Admin
+serviceAccountKey.json
+firebase-debug.log
+
+# Misc
+*.zip
