@@ -1,0 +1,4 @@
+.wrapper{display:grid;place-items:center;min-height:70dvh;padding:16px}
+.form{width:360px;display:grid;gap:12px}
+.heading{margin:0}
+.label{font-size:12px;color:var(--muted);margin-bottom:6px}

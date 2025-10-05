@@ -1,27 +1,25 @@
+import admin from "firebase-admin"
 
-import { initializeApp, cert, getApps } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
-import fs from "fs";
-import dotenv from "dotenv";
+if (!admin.apps.length) {
+    const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+    if (!key) {
+        throw new Error("❌ FIREBASE_SERVICE_ACCOUNT_KEY ausente no .env.local")
+    }
 
-dotenv.config({ path: ".env.local" });
+    // Faz o parse e corrige as quebras de linha do private_key
+    const serviceAccount = JSON.parse(key)
+    if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n')
+    } else {
+        throw new Error("❌ private_key ausente no FIREBASE_SERVICE_ACCOUNT_KEY")
+    }
 
-const keyPath = process.env.FIREBASE_ADMIN_PRIVATE_KEY_PATH || "./firebase-key.pem";
-if (!fs.existsSync(keyPath)) {
-  throw new Error(`❌ Private key file not found at ${keyPath}`);
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    })
+
+    console.log(`✅ Firebase Admin conectado ao projeto: ${serviceAccount.project_id}`)
 }
-const privateKey = fs.readFileSync(keyPath, "utf-8");
 
-const app = getApps().length
-  ? getApps()[0]
-  : initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-        privateKey,
-      }),
-    });
-
-export const adminAuth = getAuth(app);
-export const adminDb = getFirestore(app);
+export const adminAuth = admin.auth()
+export const adminDb = admin.firestore()

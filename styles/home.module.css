@@ -1,0 +1,6 @@
+.grid{display:grid;gap:16px}
+.hero{padding:32px 0}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.list{display:grid;gap:8px}
+.item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#0c1422;border:1px solid #1f2937;border-radius:12px}
+.manual{background:#2b2a00}

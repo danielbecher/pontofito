@@ -1,0 +1,3 @@
+.grid{display:grid;gap:16px}
+.monthNav{display:flex;gap:10px;align-items:center}
+.rowManual{background:#2b2a00}

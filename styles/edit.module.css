@@ -1,0 +1,4 @@
+.grid{display:grid;gap:16px}
+.editGrid{display:grid;gap:12px}
+.editRow{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;border:1px solid #1f2937}
+.rowManual{background:#2b2a00}

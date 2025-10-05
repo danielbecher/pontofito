@@ -1,49 +1,78 @@
+'use client'
+import { useEffect, useState } from 'react'
+import styles from '@/styles/punches.module.css'
 
-import Link from "next/link";
+type Punch = {
+  id: string
+  timestamp: number
+  type: 'in' | 'out'
+  manual: boolean
+  ip: string
+}
 
-function getMonthKey(d: Date){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+export default function PunchesPage() {
+  const [loading, setLoading] = useState(true)
+  const [list, setList] = useState<Punch[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [month, setMonth] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })
 
-export default async function PunchesPage({ searchParams }: { searchParams?: { month?: string } }){
-  const now = new Date();
-  const month = searchParams?.month || getMonthKey(now);
-  const prev = new Date(month+"-01T00:00:00"); prev.setMonth(prev.getMonth()-1);
-  const next = new Date(month+"-01T00:00:00"); next.setMonth(next.getMonth()+1);
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/punches?month=${month}`, { cache: "no-store" });
-  const list = res.ok ? await res.json() : [];
-
-  const map: Record<string, number> = {};
-  for(const p of list){
-    const d = new Date(p.timestamp).toISOString().slice(0,10);
-    map[d] = (map[d]||0)+1;
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      const res = await fetch(`${base}/api/punches?month=${month}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Falha ao carregar registros')
+      const data = await res.json()
+      setList(data)
+    } catch (e: any) {
+      setError(e.message)
+    }
+    setLoading(false)
   }
-  const missing = Object.entries(map).filter(([,c])=>c%2===1).map(([d])=>d);
+
+  useEffect(() => {
+    load()
+  }, [month])
 
   return (
-    <main className="grid">
-      <div className="card monthNav">
-        <Link className="btn secondary" href={`/punches?month=${getMonthKey(prev)}`}>← {getMonthKey(prev)}</Link>
-        <div className="badge">Mês atual: {month}</div>
-        <Link className="btn secondary" href={`/punches?month=${getMonthKey(next)}`}>{getMonthKey(next)} →</Link>
-        <a className="btn" style={{marginLeft:"auto"}} href={`/punches/export?month=${month}`} target="_blank" rel="noreferrer">Exportar PDF</a>
-      </div>
-
-      <div className="card">
-        <table className="table">
-          <thead><tr><th>Data/Hora</th><th>Tipo</th><th>IP</th><th>Origem</th></tr></thead>
-          <tbody>
-            {list.map((p:any)=>(
-              <tr key={p.id} style={{background:p.manual?'#2b2a00':'transparent'}}>
-                <td>{new Date(p.timestamp).toLocaleString()}</td>
-                <td>{p.type==='in'?'Entrada':'Saída'}</td>
-                <td>{p.ip}</td>
-                <td>{p.manual?'Manual':'Automático'}</td>
-              </tr>
+    <main className={styles.container}>
+      <section className="card">
+        <h1>Registros de Ponto</h1>
+        <div className={styles.filters}>
+          <input
+            type="month"
+            value={month}
+            onChange={e => setMonth(e.target.value)}
+          />
+        </div>
+        {loading ? (
+          <p>Carregando…</p>
+        ) : error ? (
+          <div className="badge warn">{error}</div>
+        ) : list.length === 0 ? (
+          <div className="badge">Sem registros</div>
+        ) : (
+          <div className={styles.list}>
+            {list.map(p => (
+              <div key={p.id} className={`${styles.item} ${p.manual ? styles.manual : ''}`}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>
+                    {new Date(p.timestamp).toLocaleString()}
+                  </div>
+                  <div className="badge" style={{ marginTop: 4 }}>
+                    {p.type === 'in' ? 'Entrada' : 'Saída'} • IP {p.ip}
+                  </div>
+                </div>
+                {p.manual && <div className="badge warn">Manual</div>}
+              </div>
             ))}
-          </tbody>
-        </table>
-        {missing.length>0 && <div className="badge warn" style={{marginTop:10}}>Há dias com número ímpar de pontos: {missing.join(", ")}</div>}
-      </div>
+          </div>
+        )}
+      </section>
     </main>
-  );
+  )
 }
