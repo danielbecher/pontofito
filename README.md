@@ -1,22 +1,18 @@
+
 # PontoFito
 
-Next.js (App Router) + Firebase (Auth + Firestore).
-All function names and internal code are in English. UI strings are in Portuguese, per requirement.
+Next.js + Firebase (Auth + Firestore) — Registro de ponto para COFFITO.
 
-## Setup
+## Como rodar
 
-1. Copy `.env.example` to `.env.local` and fill Firebase keys.
-2. `npm i`
-3. `npm run dev`
+1. `npm install`
+2. Crie `firebase-key.pem` na raiz (conteúdo PEM real).
+3. Copie `.env.example` para `.env.local` e preencha.
+4. No Firebase Console, ative **Authentication → E-mail/senha** e crie um usuário.
+5. `npm run dev` e acesse `http://localhost:3000/login`.
 
-### Firebase
-- Enable Authentication (Email/Password).
-- Create Firestore (production mode).
-- Create at least one user in Auth (email/password).
-- Create a document in `users` with id equal to the Firebase Auth UID, or use the Admin users page to add entries (note: this sample stores app users in Firestore; adjust to your policy). Document fields:  
-  `{ name, email, role: 'employee' | 'admin', active: true }`
-
-### Notes
-- "Bater ponto" toggles between `in` and `out` based on last punch of the day.
-- Manual edits are highlighted with yellow background.
-- PDF export available per month.
+## Rotas
+- `/` — Últimos 5 pontos + botão "Bater ponto"
+- `/punches` — Lista por mês + alerta de dias ímpares
+- `/punches/edit` — Editar pontos (marca `manual=true`)
+- `/punches/export?month=YYYY-MM` — Exporta PDF

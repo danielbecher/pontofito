@@ -1,47 +1,65 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { clientAuth } from '@/lib/firebaseClient'
-import { signInWithEmailAndPassword, onAuthStateChanged, getIdToken } from 'firebase/auth'
-import styles from '@/styles/ponto.module.css'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [redirect, setRedirect] = useState('/')
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { clientAuth } from '@/lib/firebaseClient';
 
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search)
-    setRedirect(p.get('redirect') || '/')
-    const unsub = onAuthStateChanged(clientAuth, async user => {
-      if (user) {
-        const t = await getIdToken(user, true)
-        document.cookie = `__session=${t}; Path=/; SameSite=Lax`
-        window.location.href = redirect
-      }
-    })
-    return () => unsub()
-  }, [redirect])
+export default function LoginPage(){
+  const router = useRouter();
+  const sp = useSearchParams();
+  const [checking,setChecking]=useState(true);
+  const [email,setEmail]=useState('admin@coffito.gov.br');
+  const [password,setPassword]=useState('123456');
+  const [error,setError]=useState<string|null>(null);
+  const [submitting,setSubmitting]=useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    try {
-      await signInWithEmailAndPassword(clientAuth, email, password)
-    } catch {
-      setError('Falha no login')
+  useEffect(()=>{
+    (async()=>{
+      const r=await fetch('/api/auth/session',{cache:'no-store'});
+      if(r.ok){ router.replace(sp.get('redirect')||'/'); return; }
+      setChecking(false);
+    })();
+  },[router,sp]);
+
+  async function onSubmit(e:React.FormEvent){
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try{
+      const cred = await signInWithEmailAndPassword(clientAuth,email,password);
+      const idToken = await cred.user.getIdToken(true);
+      const res = await fetch('/api/auth/signin',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({idToken})
+      });
+      if(!res.ok){ const j=await res.json().catch(()=>({})); throw new Error(j?.error||'Falha no login'); }
+      router.replace(sp.get('redirect')||'/');
+    }catch(err:any){
+      setError(err?.message||'Falha no login');
+    }finally{
+      setSubmitting(false);
     }
   }
 
+  if(checking){ return <main style={{display:'grid',placeItems:'center',minHeight:'60dvh'}}>Carregando…</main> }
+
   return (
-    <div style={{maxWidth: 380, margin: '40px auto'}}>
-      <h1 style={{fontSize: 18, fontWeight: 700, marginBottom: 12}}>Entrar</h1>
-      <form onSubmit={onSubmit} className={styles.form}>
-        <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className={styles.input} />
-        <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Senha" type="password" className={styles.input} />
-        <button className={styles.buttonMain}>Entrar</button>
-        {error && <div style={{color:'#b00020', fontSize:13}}>{error}</div>}
+    <main style={{display:'grid',placeItems:'center',minHeight:'70dvh',padding:16}}>
+      <form onSubmit={onSubmit} className="card" style={{width:360,display:'grid',gap:12}}>
+        <h2 style={{margin:0}}>Entrar</h2>
+        <label>
+          <div className="label">E-mail</div>
+          <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+        </label>
+        <label>
+          <div className="label">Senha</div>
+          <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+        </label>
+        {error && <div className="badge warn">{error}</div>}
+        <button className="btn" type="submit" disabled={submitting}>{submitting?'Entrando…':'Entrar'}</button>
       </form>
-    </div>
-  )
+    </main>
+  );
 }

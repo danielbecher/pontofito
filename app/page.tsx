@@ -1,46 +1,59 @@
-'use client'
-import { useEffect, useState } from 'react'
-import styles from '@/styles/ponto.module.css'
 
-type Punch = { id: string; timestamp: number; type: 'in'|'out'; manual: boolean; ip: string }
+'use client';
+import { useEffect, useState } from "react";
 
-export default function HomePage() {
-  const [items, setItems] = useState<Punch[]>([])
-  const [busy, setBusy] = useState(false)
+type Punch = { id:string; timestamp:number; type:'in'|'out'; manual:boolean; ip:string };
 
-  useEffect(() => {
-    fetch('/api/punches/list?limit=5', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => setItems(d.items || []))
-  }, [])
+export default function Home(){
+  const [loading,setLoading]=useState(true);
+  const [list,setList]=useState<Punch[]>([]);
+  const [error,setError]=useState<string|null>(null);
+  const [punching,setPunching]=useState(false);
 
-  async function punch() {
-    setBusy(true)
-    try {
-      const r = await fetch('/api/punches/create', { method: 'POST' })
-      if (r.ok) {
-        const d = await r.json()
-        setItems(prev => [d.item, ...prev].slice(0,5))
-      }
-    } finally {
-      setBusy(false)
-    }
+  async function load(){
+    setLoading(true);
+    const r=await fetch('/api/punches?limit=5',{cache:'no-store'});
+    if(r.ok){ setList(await r.json()); } else { setList([]); }
+    setLoading(false);
+  }
+  useEffect(()=>{load();},[]);
+
+  async function punch(){
+    setPunching(true);
+    setError(null);
+    const r=await fetch('/api/punch',{method:'POST'});
+    if(!r.ok){ const j=await r.json().catch(()=>({})); setError(j?.error||'Falha ao bater ponto'); }
+    await load();
+    setPunching(false);
   }
 
   return (
-    <div className="grid" style={{gap:12}}>
-      <button onClick={punch} disabled={busy} className={styles.buttonMain}>
-        {busy ? 'Registrando...' : 'Bater ponto'}
-      </button>
-      <div className="grid" style={{gap:8}}>
-        {items.map(p => (
-          <div key={p.id} className={`${styles.card} ${p.manual ? styles.cardManual : ''}`}>
-            <div style={{fontSize:14}}>
-              {new Date(p.timestamp).toLocaleString('pt-BR', { timeZone: 'UTC' })} — {p.type.toUpperCase()} — {p.ip}
-            </div>
+    <main className="grid">
+      <section className="hero card">
+        <h1 style={{marginTop:0}}>Bem-vindo ao PontoFito</h1>
+        <div className="actions">
+          <button className="btn" onClick={punch} disabled={punching}>{punching?'Registrando…':'Bater ponto'}</button>
+          <a className="btn secondary" href="/punches">Ver todos</a>
+        </div>
+        {error && <div className="badge warn" style={{marginTop:10}}>{error}</div>}
+      </section>
+      <section className="card">
+        <h3 style={{marginTop:0}}>Últimos 5 pontos</h3>
+        {loading ? <p>Carregando…</p> : (
+          <div className="list">
+            {list.length===0 && <div className="badge">Sem registros</div>}
+            {list.map(p=>(
+              <div key={p.id} className={"item "+(p.manual?'manual':'')}>
+                <div>
+                  <div style={{fontWeight:600}}>{new Date(p.timestamp).toLocaleString()}</div>
+                  <div className="badge" style={{marginTop:4}}>{p.type==='in'?'Entrada':'Saída'} • IP {p.ip}</div>
+                </div>
+                {p.manual && <div className="badge warn">Manual</div>}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
-  )
+        )}
+      </section>
+    </main>
+  );
 }

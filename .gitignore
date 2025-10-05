@@ -1,38 +1,10 @@
-# Dependencies
-node_modules/
 
-# Next.js build output
-.next/
-out/
-.vercel/
-
-# Logs
+node_modules
+.next
+.env*
+firebase-key.pem
+debug_key.pem
 npm-debug.log*
 yarn-debug.log*
-pnpm-debug.log*
-*.log
-
-# Environment files
-.env*
-!.env.example
-
-# OS
+yarn-error.log*
 .DS_Store
-Thumbs.db
-
-# Editors
-.vscode/
-.idea/
-*.swp
-.eslintcache
-
-# Coverage
-coverage/
-*.lcov
-
-# Firebase/Admin
-serviceAccountKey.json
-firebase-debug.log
-
-# Misc
-*.zip
